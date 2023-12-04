@@ -217,7 +217,6 @@ def get_lp_equivalent_for_rewards(lp_contract_address, delta0, delta1):
 
 
 def get_lp_value_in_usd(stake_amount, hypervisor_info):
-    # Assuming stake_amount is in the same decimal format as totalSupply in hypervisor data
     if hypervisor_info['totalSupply'] > 0:
         user_percentage = stake_amount / hypervisor_info['totalSupply']
         lp_value_usd = user_percentage * float(hypervisor_info['poolTvlUSD'])
@@ -298,21 +297,16 @@ print(f"Rewards due for wallet {user_wallet_address} from {start_datetime} to {e
 print("--------------------------------------------------")
 for result in results:
     lp_pair_symbol = result['lp_name']
-    lp_contract_address = result['lp_address'].lower()  # Ensure the address is in lower case
+    lp_contract_address = result['lp_address'].lower()
 
-    # Default values for new fields
     total_lp_value_usd = None
     lp_tokens_for_fees = None
     total_fees = result['user_fees0_usd'] + result['user_fees1_usd']
 
-    # Check if the LP contract address exists in the downloaded data
     if lp_contract_address in hypervisor_data:
         hypervisor_info = hypervisor_data[lp_contract_address]
 
-        # Calculate the total value of the user's LP in USD
         total_lp_value_usd = get_lp_value_in_usd(result['stake_amount'], hypervisor_info)
-
-        # Calculate the equivalent amount of LP tokens for the user's USD fees
         lp_tokens_for_fees = get_lp_tokens_for_fees(total_fees, hypervisor_info)
 
     formatted_results[lp_pair_symbol] = {
@@ -349,6 +343,20 @@ for result in results:
     if result['user_fees1_usd']:
         print(f"User Fees in {result['token1_name']} (USD): ${result['user_fees1_usd']:,.2f}")
     print("--------------------------------------------------")
+
+
+total_fees_usd_all_pairs = 0
+total_lp_value_usd_all_pairs = 0
+
+for key, value in formatted_results.items():
+    if isinstance(value, dict):
+        total_fees_usd_all_pairs += value.get('total_fees_usd', 0)
+        total_lp_value_usd_all_pairs += value.get('total_lp_value_usd', 0) if value.get('total_lp_value_usd') is not None else 0
+
+formatted_results["TOTAL"] = {
+    'total_fees_usd_all_pairs': total_fees_usd_all_pairs,
+    'total_lp_value_usd_all_pairs': total_lp_value_usd_all_pairs
+}
 
 
 if config.get('timestamp_rewards_json', False):
