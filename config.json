@@ -1,8 +1,9 @@
 {
+  "hypervisor_data": "https://wire2.gamma.xyz/quickswap/polygon/hypervisors/allData",
   "rpc_url": "insert-your-rpc-url-here",
   "user_wallet_address": "0xc5F69c697633a095D8E994F8921836720a6dca87",
   "masterchef_contract": "0x20ec0d06F447d550fC6edee42121bc8C1817b97D",
-  "start_datetime": "Oct-25-2023 11:53:31 PM +UTC",
+  "start_datetime": "Nov-08-2023 01:26:35 AM +UTC",
   "end_datetime": "now",
   "timestamp_rewards_json": false,
   "check_historical_balances": false,
@@ -34,6 +35,10 @@
     "DAI": {
         "endpoint": "https://api.coingecko.com/api/v3/simple/price?ids=dai&vs_currencies=usd",
         "id": "dai"
+    },
+    "QUICK": {
+        "endpoint": "https://api.coingecko.com/api/v3/simple/price?ids=quickswap&vs_currencies=usd",
+        "id": "quickswap"
     }
   }
 }

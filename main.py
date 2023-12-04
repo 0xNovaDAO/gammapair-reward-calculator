@@ -25,6 +25,16 @@ masterchef_contract = w3.eth.contract(address=masterchef_contract_address, abi=m
 token_price_cache = {}
 
 
+def download_json_data(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return None
+
+
 def etherscan_datetime_to_timestamp(date_str): # Yeah this is pretty hacky, might be better to just demand an actual valid datetime
     pattern = r'(?P<date_time>.+?) (\+(?P<tz>\w+))?$'
     match = re.match(pattern, date_str)
@@ -206,6 +216,26 @@ def get_lp_equivalent_for_rewards(lp_contract_address, delta0, delta1):
     return total_lp_equivalent
 
 
+def get_lp_value_in_usd(stake_amount, hypervisor_info):
+    # Assuming stake_amount is in the same decimal format as totalSupply in hypervisor data
+    if hypervisor_info['totalSupply'] > 0:
+        user_percentage = stake_amount / hypervisor_info['totalSupply']
+        lp_value_usd = user_percentage * float(hypervisor_info['poolTvlUSD'])
+        return lp_value_usd
+    return 0
+
+
+def get_lp_tokens_for_fees(fees_usd, hypervisor_info):
+    if float(hypervisor_info['poolTvlUSD']) > 0:
+        total_lp_tokens = float(hypervisor_info['poolTvlUSD']) / float(hypervisor_info['totalSupply'])
+        lp_tokens_for_fees = fees_usd / total_lp_tokens
+        return lp_tokens_for_fees
+    return 0
+
+
+url = config['hypervisor_data']
+hypervisor_data = download_json_data(url)
+
 start_datetime = config['start_datetime']
 end_datetime = config['end_datetime']
 user_wallet_address = config['user_wallet_address']
@@ -268,6 +298,23 @@ print(f"Rewards due for wallet {user_wallet_address} from {start_datetime} to {e
 print("--------------------------------------------------")
 for result in results:
     lp_pair_symbol = result['lp_name']
+    lp_contract_address = result['lp_address'].lower()  # Ensure the address is in lower case
+
+    # Default values for new fields
+    total_lp_value_usd = None
+    lp_tokens_for_fees = None
+    total_fees = result['user_fees0_usd'] + result['user_fees1_usd']
+
+    # Check if the LP contract address exists in the downloaded data
+    if lp_contract_address in hypervisor_data:
+        hypervisor_info = hypervisor_data[lp_contract_address]
+
+        # Calculate the total value of the user's LP in USD
+        total_lp_value_usd = get_lp_value_in_usd(result['stake_amount'], hypervisor_info)
+
+        # Calculate the equivalent amount of LP tokens for the user's USD fees
+        lp_tokens_for_fees = get_lp_tokens_for_fees(total_fees, hypervisor_info)
+
     formatted_results[lp_pair_symbol] = {
         'contract': result['lp_address'],
         'token0': {
@@ -286,7 +333,12 @@ for result in results:
             'fees_normalised': result['user_fees1'],
             'fees_usd': result['user_fees1_usd']
         },
-        'total_fees_usd': result['user_fees0_usd'] + result['user_fees1_usd']
+        'total_fees_usd': total_fees,
+        'total_lp_value_usd': total_lp_value_usd,
+        'total_lp_tokens': result['stake_amount'],
+        'total_lp_tokens_normalized': convert_to_normalised_dec(result['stake_amount'], 18),
+        'lp_tokens_for_fees': lp_tokens_for_fees,
+        'lp_tokens_for_fees_normalized': convert_to_normalised_dec(lp_tokens_for_fees, 18)
     }
     print(f"PID: {result['pid']}, LP Address: {result['lp_address']}, Stake Amount: {result['stake_amount']}")
     print(f"Rewards For LP: {result['lp_name']} ::")
@@ -297,6 +349,7 @@ for result in results:
     if result['user_fees1_usd']:
         print(f"User Fees in {result['token1_name']} (USD): ${result['user_fees1_usd']:,.2f}")
     print("--------------------------------------------------")
+
 
 if config.get('timestamp_rewards_json', False):
     filename = f"rewards_{user_wallet_address}_{start_datetime}_-_{end_datetime}.json"
