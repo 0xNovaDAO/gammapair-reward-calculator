@@ -223,14 +223,14 @@ def get_lp_equivalent_for_rewards(lp_contract_address, delta0, delta1):
 def get_lp_value_in_usd(stake_amount, hypervisor_info):
     if hypervisor_info['totalSupply'] > 0:
         user_percentage = stake_amount / hypervisor_info['totalSupply']
-        lp_value_usd = user_percentage * float(hypervisor_info['poolTvlUSD'])
+        lp_value_usd = user_percentage * float(hypervisor_info['tvlUSD'])
         return lp_value_usd
     return 0
 
 
 def get_lp_tokens_for_fees(fees_usd, hypervisor_info):
-    if float(hypervisor_info['poolTvlUSD']) > 0:
-        total_lp_tokens = float(hypervisor_info['poolTvlUSD']) / float(hypervisor_info['totalSupply'])
+    if float(hypervisor_info['tvlUSD']) > 0:
+        total_lp_tokens = float(hypervisor_info['tvlUSD']) / float(hypervisor_info['totalSupply'])
         lp_tokens_for_fees = fees_usd / total_lp_tokens
         return lp_tokens_for_fees
     return 0
