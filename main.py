@@ -1,5 +1,7 @@
 import json
 import re
+import time
+
 import requests
 from web3 import Web3
 from datetime import datetime, timezone
@@ -52,12 +54,14 @@ def etherscan_datetime_to_timestamp(date_str): # Yeah this is pretty hacky, migh
 
 
 def fetch_token_usd_value(symbol):
+    print(f"Waiting 10s before requesting price data for {symbol}")
+    time.sleep(10)
     if symbol in token_price_cache:
         return token_price_cache[symbol]
 
     token_data = config['supported_token_prices'].get(symbol)
     if not token_data:
-        return None
+        return 0
 
     try:
         response = requests.get(token_data["endpoint"])
@@ -69,7 +73,7 @@ def fetch_token_usd_value(symbol):
         return usd_value
     except requests.RequestException:
         print(f"Error fetching price for {symbol}.")
-        return None
+        return 0
 
 
 def get_token_info(token_address):
@@ -256,6 +260,9 @@ for stake_info in user_stakes:
 
     token0_usd_value = fetch_token_usd_value(token0_symbol)
     token1_usd_value = fetch_token_usd_value(token1_symbol)
+
+    user_fees0_readable = user_fees0_readable.replace(',', '')
+    user_fees1_readable = user_fees1_readable.replace(',', '')
 
     user_fees0_usd = float(user_fees0_readable) * token0_usd_value if token0_usd_value else None
     user_fees1_usd = float(user_fees1_readable) * token1_usd_value if token1_usd_value else None
