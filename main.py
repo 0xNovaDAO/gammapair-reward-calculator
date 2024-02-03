@@ -77,12 +77,16 @@ def fetch_token_usd_value(symbol):
 
 
 def get_token_info(token_address):
-    token_contract = w3.eth.contract(address=token_address, abi=gammapair_abi)
-    decimals = token_contract.functions.decimals().call()
-    name = token_contract.functions.name().call()
-    symbol = token_contract.functions.symbol().call()
+    token_address = w3.to_checksum_address(token_address)
+    try:
+        token_contract = w3.eth.contract(address=token_address, abi=gammapair_abi)
+        decimals = token_contract.functions.decimals().call()
+        name = token_contract.functions.name().call()
+        symbol = token_contract.functions.symbol().call()
 
-    return decimals, name, symbol
+        return decimals, name, symbol
+    except Exception as e:
+        print(f"Error checking token details for gammapair pool {token_address}: {e}")
 
 
 def convert_to_normalised_dec(raw_value, decimals):
@@ -114,7 +118,41 @@ def get_user_stakes_in_pools(user_address, masterchef_contract):
         if result:
             user_stakes.append(result)
 
-    print(user_stakes)
+    return user_stakes
+
+
+def check_balance_for_pool(user_address, pool_key, hypervisor_data):
+    try:
+        pool_addr = w3.to_checksum_address(pool_key)
+        pool_data = hypervisor_data[pool_key]
+        lp_token_address = w3.to_checksum_address(pool_data["poolAddress"])
+        ctr = w3.eth.contract(address=pool_addr, abi=gammapair_abi)
+        user_balance = ctr.functions.balanceOf(user_address).call()
+
+        if user_balance > 0:
+            return {
+                'pid': w3.to_checksum_address(pool_key),
+                'lp_contract_address': lp_token_address,
+                'stake_amount': user_balance
+            }
+    except Exception as e:
+        print(f"Error checking balance for pool {pool_key}: {e}")
+    return None
+
+
+def get_user_stakes_from_wallet(user_address, hypervisor_data):
+    user_stakes = []
+
+    # Prepare the list of tasks for threading
+    tasks = [(user_address, pool_key) for pool_key in hypervisor_data.keys()]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_pool = {executor.submit(check_balance_for_pool, *task, hypervisor_data): task[1] for task in tasks}
+        for future in concurrent.futures.as_completed(future_to_pool):
+            result = future.result()
+            if result:
+                user_stakes.append(result)
+
     return user_stakes
 
 
@@ -150,7 +188,7 @@ def process_log_chunk(data, gammapair_contract):
 
 
 def fetch_burn_events_and_calculate_fees(stake_info, start_datetime, end_datetime):
-    lp_contract_address = stake_info['lp_contract_address']
+    lp_contract_address = stake_info['pid']
     gammapair_contract = w3.eth.contract(address=lp_contract_address, abi=gammapair_abi)
 
     start_timestamp = etherscan_datetime_to_timestamp(start_datetime)
@@ -174,7 +212,7 @@ def fetch_burn_events_and_calculate_fees(stake_info, start_datetime, end_datetim
     })
 
     block_numbers = [log['blockNumber'] for log in logs]
-    print(f"{len(block_numbers)} zeroBurn event blocks to scan..")
+    print(f"{len(block_numbers)} zeroBurn event blocks to scan on contract {lp_contract_address}..")
 
     CHUNK_SIZE = 32
     log_chunks = [logs[i:i + CHUNK_SIZE] for i in range(0, len(logs), CHUNK_SIZE)]
@@ -232,7 +270,7 @@ def get_lp_tokens_for_fees(fees_usd, hypervisor_info):
     if float(hypervisor_info['tvlUSD']) > 0:
         total_lp_tokens = float(hypervisor_info['tvlUSD']) / float(hypervisor_info['totalSupply'])
         lp_tokens_for_fees = fees_usd / total_lp_tokens
-        return lp_tokens_for_fees
+        return lp_tokens_for_fees if lp_tokens_for_fees is not None else 0
     return 0
 
 
@@ -242,7 +280,7 @@ hypervisor_data = download_json_data(url)
 start_datetime = config['start_datetime']
 end_datetime = config['end_datetime']
 user_wallet_address = config['user_wallet_address']
-user_stakes = get_user_stakes_in_pools(user_wallet_address, masterchef_contract)
+user_stakes = get_user_stakes_from_wallet(user_wallet_address, hypervisor_data)
 results = []
 
 for stake_info in user_stakes:
@@ -267,7 +305,7 @@ for stake_info in user_stakes:
     user_fees0_usd = float(user_fees0_readable) * token0_usd_value if token0_usd_value else None
     user_fees1_usd = float(user_fees1_readable) * token1_usd_value if token1_usd_value else None
 
-    lp_decimals, lp_name, _ = get_token_info(stake_info['lp_contract_address'])
+    lp_decimals, lp_name, _ = get_token_info(stake_info['pid'])
 
     results.append({
         'pid': stake_info['pid'],
@@ -303,8 +341,9 @@ print("--------------------------------------------------")
 print(f"Rewards due for wallet {user_wallet_address} from {start_datetime} to {end_datetime}:")
 print("--------------------------------------------------")
 for result in results:
+    print(json.dumps(result, indent=4))
     lp_pair_symbol = result['lp_name']
-    lp_contract_address = result['lp_address'].lower()
+    lp_contract_address = result['pid'].lower()
 
     total_lp_value_usd = None
     lp_tokens_for_fees = None
