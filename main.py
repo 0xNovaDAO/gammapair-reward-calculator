@@ -343,19 +343,20 @@ print("--------------------------------------------------")
 for result in results:
     print(json.dumps(result, indent=4))
     lp_pair_symbol = result['lp_name']
-    lp_contract_address = result['pid'].lower()
+    hypervisor_address = result['pid'].lower()
 
     total_lp_value_usd = None
     lp_tokens_for_fees = None
     total_fees = result['user_fees0_usd'] + result['user_fees1_usd']
 
-    if lp_contract_address in hypervisor_data:
-        hypervisor_info = hypervisor_data[lp_contract_address]
+    if hypervisor_address in hypervisor_data:
+        hypervisor_info = hypervisor_data[hypervisor_address]
 
         total_lp_value_usd = get_lp_value_in_usd(result['stake_amount'], hypervisor_info)
         lp_tokens_for_fees = get_lp_tokens_for_fees(total_fees, hypervisor_info)
 
     formatted_results[lp_pair_symbol] = {
+        'hypervisor_address': hypervisor_address,
         'contract': result['lp_address'],
         'token0': {
             'address': result['token0_address'],

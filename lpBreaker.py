@@ -20,7 +20,8 @@ w3 = Web3(Web3.HTTPProvider(config['rpc_url']))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 yield_manager_wallet = w3.to_checksum_address(config['user_wallet_address'])
-yield_manager_private_key = w3.to_checksum_address(pk_config['user_wallet_optional_pk'])
+yield_manager_private_key = pk_config['user_wallet_optional_pk']
+
 
 def break_lp(lp_addr, amt_to_break):
     lp_addr = w3.to_checksum_address(lp_addr)
@@ -42,3 +43,14 @@ def break_lp(lp_addr, amt_to_break):
     tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     return tx_receipt
+
+
+for key, value in rewards.items():
+    if isinstance(value, dict) and key != "TOTAL":
+        lp_val_fees = w3.to_wei(value['lp_tokens_for_fees'], 'wei')
+        total_lp = w3.to_wei(value['total_lp_tokens'], 'wei')
+        perc_breaking = round((lp_val_fees / total_lp) * 100, 2)
+        print(f"Breaking {lp_val_fees} LP ({perc_breaking}%) of {key} at {value['hypervisor_address']}")
+
+        tx = break_lp(w3.to_checksum_address(value['hypervisor_address']), lp_val_fees)
+        print(f"LP Broken: {tx['transactionHash'].hex()}")
