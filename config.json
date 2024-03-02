@@ -3,7 +3,7 @@
   "rpc_url": "insert-your-rpc-url-here",
   "user_wallet_address": "0xc5F69c697633a095D8E994F8921836720a6dca87",
   "masterchef_contract": "0x20ec0d06F447d550fC6edee42121bc8C1817b97D",
-  "start_datetime": "Nov-08-2023 01:26:35 AM +UTC",
+  "start_datetime": "Feb-02-2024 10:59:37 PM +UTC",
   "end_datetime": "now",
   "timestamp_rewards_json": false,
   "check_historical_balances": false,

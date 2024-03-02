@@ -71,8 +71,8 @@ def fetch_token_usd_value(symbol):
         token_price_cache[symbol] = usd_value
 
         return usd_value
-    except requests.RequestException:
-        print(f"Error fetching price for {symbol}.")
+    except requests.RequestException as e:  # Capture the exception as 'e'
+        print(f"Error fetching price for {symbol}: {e}")  # Print the actual exception message
         return 0
 
 
