@@ -1,7 +1,8 @@
 {
   "hypervisor_data": "https://wire2.gamma.xyz/quickswap/polygon/hypervisors/allData",
   "rpc_url": "insert-your-rpc-url-here",
-  "user_wallet_address": "0xc5F69c697633a095D8E994F8921836720a6dca87",
+  "chain_id": 137,
+  "user_wallet_address": "0x2357c0466588Cf2F8d87cc654F763023880c3474",
   "masterchef_contract": "0x20ec0d06F447d550fC6edee42121bc8C1817b97D",
   "start_datetime": "Feb-02-2024 10:59:37 PM +UTC",
   "end_datetime": "now",
