@@ -17,6 +17,9 @@ with open('masterchef.json', 'r') as file:
 with open('config.json', 'r') as file:
     config = json.load(file)
 
+with open('pk_config.json', 'r') as file:
+    pk_config = json.load(file)
+
 
 w3 = Web3(Web3.HTTPProvider(config['rpc_url']))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -54,8 +57,6 @@ def etherscan_datetime_to_timestamp(date_str): # Yeah this is pretty hacky, migh
 
 
 def fetch_token_usd_value(symbol):
-    print(f"Waiting 10s before requesting price data for {symbol}")
-    time.sleep(10)
     if symbol in token_price_cache:
         return token_price_cache[symbol]
 
@@ -64,7 +65,13 @@ def fetch_token_usd_value(symbol):
         return 0
 
     try:
-        response = requests.get(token_data["endpoint"])
+        token_uri = token_data["endpoint"]
+        if pk_config.get("cg_pro_key") and pk_config["cg_pro_key"].strip():
+            token_uri = token_data["pro_endpoint"] + pk_config["cg_pro_key"]
+        else:
+            print(f"Waiting 10s before requesting price data for {symbol}")
+            time.sleep(10)
+        response = requests.get(token_uri)
         response.raise_for_status()
         data = response.json()
         usd_value = data[token_data["id"]]['usd']
