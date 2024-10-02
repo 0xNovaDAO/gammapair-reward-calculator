@@ -4,7 +4,7 @@
   "chain_id": 137,
   "user_wallet_address": "0x2357c0466588Cf2F8d87cc654F763023880c3474",
   "masterchef_contract": "0x20ec0d06F447d550fC6edee42121bc8C1817b97D",
-  "start_datetime": "Mar-02-2024 08:26:49 PM +UTC",
+  "start_datetime": "Sep-02-2024 09:45:00 PM +UTC",
   "end_datetime": "now",
   "timestamp_rewards_json": false,
   "check_historical_balances": false,
@@ -20,6 +20,11 @@
         "id": "ethereum"
     },
     "WMATIC": {
+        "endpoint": "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
+        "pro_endpoint": "https://pro-api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd&x_cg_pro_api_key=",
+        "id": "matic-network"
+    },
+    "WPOL": {
         "endpoint": "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd",
         "pro_endpoint": "https://pro-api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd&x_cg_pro_api_key=",
         "id": "matic-network"

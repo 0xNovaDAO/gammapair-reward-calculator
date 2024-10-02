@@ -20,6 +20,7 @@ with open('config.json', 'r') as file:
 with open('pk_config.json', 'r') as file:
     pk_config = json.load(file)
 
+print("config loaded, proceeding..")
 
 w3 = Web3(Web3.HTTPProvider(config['rpc_url']))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -266,8 +267,9 @@ def get_lp_equivalent_for_rewards(lp_contract_address, delta0, delta1):
 
 
 def get_lp_value_in_usd(stake_amount, hypervisor_info):
-    if hypervisor_info['totalSupply'] > 0:
-        user_percentage = stake_amount / hypervisor_info['totalSupply']
+    total_supply = float(hypervisor_info['totalSupply'])
+    if total_supply > 0:
+        user_percentage = stake_amount / total_supply
         lp_value_usd = user_percentage * float(hypervisor_info['tvlUSD'])
         return lp_value_usd
     return 0
